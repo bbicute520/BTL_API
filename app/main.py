@@ -3,14 +3,9 @@ from fastapi import FastAPI
 
 from app.routers import crawler, products, watchlist
 from app.services.scheduler import start_scheduler
-from app.database import engine
-from app.models import Base
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("Initializing Database Tables...")
-    Base.metadata.create_all(bind=engine)
-    
     print("Starting background scheduler...")
     start_scheduler()
     yield

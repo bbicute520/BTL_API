@@ -11,12 +11,6 @@ from app.services.notification import send_price_alert
 router = APIRouter()
 
 
-@router.post("/all")
-def crawl_all(background_tasks: BackgroundTasks) -> dict:
-    background_tasks.add_task(crawl_all_job)
-    return {"message": "Crawler job started in background"}
-
-
 @router.post("/{product_id}")
 async def crawl_product(product_id: int, db: Session = Depends(get_db)) -> dict:
     product = db.query(Product).filter(Product.id == product_id).first()
@@ -34,9 +28,14 @@ async def crawl_product(product_id: int, db: Session = Depends(get_db)) -> dict:
     watchlists = db.query(Watchlist).filter(Watchlist.product_id == product.id, Watchlist.is_notified == False).all()
     for wl in watchlists:
         if new_price and new_price <= wl.target_price:
-            success = send_price_alert(wl.email, product.name, new_price)
-            if success:
-                wl.is_notified = True
+            send_price_alert(wl.email, product.name, new_price)
+            wl.is_notified = True
             
     db.commit()
     return {"message": "Crawled successfully", "current_price": new_price}
+
+
+@router.post("/all")
+def crawl_all(background_tasks: BackgroundTasks) -> dict:
+    background_tasks.add_task(crawl_all_job)
+    return {"message": "Crawler job started in background"}

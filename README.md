@@ -1,91 +1,81 @@
-# 📦 Price Tracker API — Hệ thống Theo dõi Giá Sản phẩm Tiki
+# 📦 Price Tracker API — Hệ thống Theo dõi Giá Thông minh
 
-Hệ thống REST API được xây dựng bằng **FastAPI** và **Python**, cho phép người dùng tự động theo dõi biến động giá của các sản phẩm trên sàn thương mại điện tử Tiki và nhận thông báo qua Email khi giá chạm ngưỡng mong muốn.
-
----
-
-## ✨ Tính năng chính
-
-- 🕷️ **Crawl dữ liệu tự động**: Tự động lấy tên, giá và URL sản phẩm từ Tiki thông qua ID.
-- 📈 **Lịch sử giá**: Ghi lại mọi biến động giá theo thời gian để người dùng dễ dàng theo dõi.
-- 👁️ **Danh sách theo dõi (Watchlist)**: Người dùng có thể đặt ngưỡng giá mục tiêu cho từng sản phẩm.
-- 📧 **Thông báo Email**: Tự động gửi email cảnh báo ngay lập tức khi giá sản phẩm giảm xuống bằng hoặc thấp hơn ngưỡng đã đặt.
-- 🕒 **Bộ lập lịch (Scheduler)**: Hệ thống tự động quét giá toàn bộ sản phẩm mỗi 6 giờ một lần.
+Hệ thống REST API chuyên nghiệp được xây dựng bằng **FastAPI** và **Python**, cho phép theo dõi tự động biến động giá sản phẩm trên **Tiki** và gửi cảnh báo qua Email. Đã tối ưu hóa để chạy trên **PostgreSQL (Supabase)** và sẵn sàng đóng gói với **Docker**.
 
 ---
 
-## 🛠️ Công nghệ sử dụng
+## ✨ Tính năng cao cấp (Premium Features)
 
-- **Backend**: FastAPI (Python)
-- **Database**: SQLite (SQLAlchemy ORM)
-- **Crawler**: Httpx (Asynchronous HTTP client)
-- **Scheduler**: APScheduler
-- **Notification**: SMTP (Gmail)
-- **Environment**: Python-dotenv & Pydantic
-
----
-
-## 🚀 Hướng dẫn cài đặt
-
-### 1. Cài đặt môi trường
-Đảm bảo bạn đã cài đặt Python 3.9+.
-
-```bash
-# Tạo môi trường ảo
-python -m venv venv
-
-# Kích hoạt môi trường ảo
-# Windows:
-.\venv\Scripts\activate
-# Linux/macOS:
-source venv/bin/activate
-
-# Cài đặt các thư viện cần thiết
-pip install -r requirements.txt
-```
-
-### 2. Cấu hình biến môi trường
-Tạo tệp `.env` dựa trên tệp `.env.example` và điền các thông tin cần thiết:
-
-```env
-# Database
-DATABASE_URL="sqlite:///./app.db"
-
-# SMTP (Gmail)
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT=587
-SMTP_USER="your-email@gmail.com"
-SMTP_PASSWORD="your-app-password" # Sử dụng App Password của Google
-SMTP_FROM="Price Tracker <your-email@gmail.com>"
-```
-
-### 3. Khởi chạy ứng dụng
-```bash
-uvicorn app.main:app --reload
-```
-Sau khi chạy, hãy truy cập:
-- **Tài liệu API (Swagger UI)**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- 🚀 **Asynchronous Architecture**: Toàn bộ hệ thống chạy bất đồng bộ (FastAPI + AsyncIOScheduler + Httpx).
+- 🛡️ **API Security**: Bảo vệ các điểm cuối bằng `X-API-KEY`.
+- 🕷️ **Smart Crawler**: Cơ chế tự động thử lại (Retry) và Exponential Backoff khi bị Tiki chặn.
+- 🕒 **Robotic Scheduler**: Tự động quét giá định kỳ và so sánh với ngưỡng mục tiêu của người dùng.
+- 📧 **Instant Alerts**: Thông báo ngay lập tức qua Gmail khi giá giảm chạm ngưỡng.
+- 🐳 **Dockerized**: Triển khai thần tốc chỉ với Docker Compose.
+- 🪵 **Centralized Logging**: Ghi nhật ký chi tiết lỗi và lịch sử crawl vào `app.log`.
 
 ---
 
-## 📁 Cấu trúc thư mục
+## 🛠️ Yêu cầu hệ thống
+- Python 3.10+
+- Tài khoản Supabase (Hoặc PostgreSQL bất kỳ)
+- Gmail App Password (để gửi email)
+- Docker & Docker Compose (Tùy chọn)
 
-```
+---
+
+## 🚀 Hướng dẫn khởi chạy nhanh
+
+### Cách 1: Sử dụng Docker (Khuyên dùng)
+1. Điền thông tin vào file `.env`.
+2. Chạy lệnh:
+   ```bash
+   docker-compose up -d
+   ```
+3. Truy cập Swagger UI tại: `http://localhost:8000/docs`
+
+### Cách 2: Chạy thủ công (Manual)
+1. Cài đặt thư viện:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Khởi chạy:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+---
+
+## 🔐 Cấu hình Bảo mật
+Để gọi bất kỳ API nào, bạn cần đính kèm Header sau:
+- **Header Key**: `X-API-KEY`
+- **Header Value**: (Lấy giá trị từ biến `API_KEY` trong file `.env`)
+
+---
+
+## 📁 Cấu trúc thư mục chuyên nghiệp
+```text
 BTL_API/
 ├── app/
-│   ├── main.py              # Điểm khởi tạo ứng dụng & Lifespan
-│   ├── database.py          # Cấu hình kết nối Database
-│   ├── models.py            # Định nghĩa bảng dữ liệu (SQLAlchemy)
-│   ├── schemas.py           # Định nghĩa kiểu dữ liệu API (Pydantic)
-│   ├── routers/             # Các API Endpoint (Products, Watchlist, Crawler)
-│   └── services/            # Logic nghiệp vụ (Crawler, Notification, Scheduler)
-├── .env                     # Biến môi trường (Secret)
-├── .gitignore               # Các file không đưa lên Git
-├── requirements.txt         # Danh sách thư viện
+│   ├── main.py              # Tâm điểm khởi tạo & Middleware
+│   ├── models.py            # Cấu trúc bảng (SQLAlchemy)
+│   ├── schemas.py           # Ràng buộc dữ liệu (Pydantic v2)
+│   ├── routers/             # Quản lý Product, Watchlist, Crawler
+│   └── services/            # Logic Crawler, Scheduler, Mail, Logger
+├── tests/                   # Kiểm thử tự động (Pytest)
+├── Dockerfile               # Đóng gói ứng dụng
+├── docker-compose.yml       # Điều phối triển khai
+├── .env                     # Cấu hình bí mật
 └── README.md                # Tài liệu dự án
 ```
 
 ---
 
-## 📝 Giấy phép
-Dự án được phát triển cho mục đích học tập (Bài tập lớn môn Lập trình API).
+## 🧪 Chạy Kiểm thử (Testing)
+Để đảm bảo API hoạt động đúng, chạy lệnh:
+```bash
+pytest
+```
+
+---
+**Phát triển bởi:** [Tên của bạn] - *Bài tập lớn môn Lập trình API*

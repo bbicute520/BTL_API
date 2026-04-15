@@ -30,9 +30,8 @@ def crawl_all_job():
                 watchlists = db.query(Watchlist).filter(Watchlist.product_id == prod.id, Watchlist.is_notified == False).all()
                 for wl in watchlists:
                     if new_price and new_price <= wl.target_price:
-                        success = send_price_alert(wl.email, prod.name, new_price)
-                        if success:
-                            wl.is_notified = True
+                        send_price_alert(wl.email, prod.name, new_price)
+                        wl.is_notified = True
                 
                 db.commit()
             except Exception as e:
