@@ -11,8 +11,17 @@ from app.services.notification import send_price_alert
 router = APIRouter()
 
 
+@router.post("/test-telegram")
+async def test_telegram():
+    """Endpoint để test nhanh kết nối với Telegram Bot"""
+    from app.services.notification import send_telegram_message
+    send_telegram_message("🔔 <b>Kết nối thành công!</b>\nHệ thống Price Tracker đã sẵn sàng gửi thông báo cho bạn.")
+    return {"message": "Test message sent to Telegram. Check your bot!"}
+
+
 @router.post("/{product_id}")
 async def crawl_product(product_id: int, db: Session = Depends(get_db)) -> dict:
+
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product or not product.tiki_id:
         raise HTTPException(status_code=404, detail="Product not found or missing tiki_id")
@@ -39,3 +48,5 @@ async def crawl_product(product_id: int, db: Session = Depends(get_db)) -> dict:
 def crawl_all(background_tasks: BackgroundTasks) -> dict:
     background_tasks.add_task(crawl_all_job)
     return {"message": "Crawler job started in background"}
+
+

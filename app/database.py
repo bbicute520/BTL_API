@@ -2,8 +2,11 @@ import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from dotenv import load_dotenv
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 connect_args = {}
 if DATABASE_URL.startswith("sqlite"):
@@ -14,7 +17,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # Tự động tạo các bảng nếu chưa có
+import app.models
 Base.metadata.create_all(bind=engine)
+
 
 def get_db():
     db = SessionLocal()

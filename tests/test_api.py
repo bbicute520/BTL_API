@@ -1,10 +1,15 @@
+import sys
+import os
+
+# Thêm thư mục gốc vào PYTHONPATH để có thể import module 'app'
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.main import app, get_api_key
+from app.main import app
 from app.database import Base, get_db
-import os
 
 # Sử dụng một database SQLite tạm thời cho việc testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -14,18 +19,13 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 # Override dependency get_db
 def override_get_db():
+    db = TestingSessionLocal()
     try:
-        db = TestingSessionLocal()
         yield db
     finally:
         db.close()
 
-# Override dependency get_api_key (bỏ qua check key khi test hoặc dùng key cố định)
-def override_get_api_key():
-    return "test_key"
-
 app.dependency_overrides[get_db] = override_get_db
-app.dependency_overrides[get_api_key] = override_get_api_key
 
 client = TestClient(app)
 
@@ -36,7 +36,8 @@ def setup_db():
     Base.metadata.drop_all(bind=engine)
 
 def test_list_products_empty():
-    response = client.get("/products", headers={"X-API-KEY": "test_key"})
+
+    response = client.get("/products")
     assert response.status_code == 200
     assert response.json() == []
 
@@ -46,6 +47,13 @@ def test_create_watchlist_invalid_product():
         "product_id": 999,
         "target_price": 100000
     }
-    response = client.post("/watchlist", json=payload, headers={"X-API-KEY": "test_key"})
+    response = client.post("/watchlist", json=payload)
     assert response.status_code == 404
     assert response.json()["detail"] == "Product not found"
+
+
+
+if __name__ == "__main__":
+    import pytest
+    sys.exit(pytest.main([__file__]))
+
