@@ -11,10 +11,22 @@ from sqlalchemy.orm import sessionmaker
 from app.main import app
 from app.database import Base, get_db
 
-# Sử dụng một database SQLite tạm thời cho việc testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+# Sử dụng database PostgreSQL từ environment variable (Supabase)
+# Chúng ta sẽ dùng schema 'test_env' để không đụng vào dữ liệu chính (schema public)
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+if not SQLALCHEMY_DATABASE_URL:
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+connect_args = {}
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}
+else:
+    connect_args = {"options": "-c search_path=test_env"}
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args=connect_args
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Override dependency get_db

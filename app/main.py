@@ -25,6 +25,16 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     app = FastAPI(title="Price Tracker API", lifespan=lifespan)
 
+    # CORS settings
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     # Đã tắt bảo mật API Key để thuận tiện cho việc demo/chấm điểm
     app.include_router(products.router, prefix="/products", tags=["products"])
     app.include_router(watchlist.router, prefix="/watchlist", tags=["watchlist"])
