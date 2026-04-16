@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import api from '../services/api';
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://price-tracker-gp8d.onrender.com";
+
 export default function Settings() {
   const [testEmail, setTestEmail] = useState('');
   const [loadingTele, setLoadingTele] = useState(false);
@@ -125,8 +128,8 @@ export default function Settings() {
       <div className="mt-16 pt-8 border-t border-outline-variant/15 flex flex-col md:flex-row justify-between items-center gap-4">
         <p className="text-on-surface-variant text-sm font-headline">Phiên bản 4.2.0-stable | Lõi Phân tích Tiki</p>
         <div className="flex gap-6">
-          <a href="#" className="text-on-surface-variant text-sm hover:text-primary transition-colors">Tài liệu</a>
-          <a href="#" className="text-on-surface-variant text-sm hover:text-primary transition-colors">Tài liệu API</a>
+          <a href={`${API_BASE_URL}/docs`} className="text-on-surface-variant text-sm hover:text-primary transition-colors">Tài liệu</a>
+          <a href={`${API_BASE_URL}/redoc`} className="text-on-surface-variant text-sm hover:text-primary transition-colors">Tài liệu API</a>
           <a href="#" className="text-on-surface-variant text-sm hover:text-primary transition-colors">Chính sách bảo mật</a>
         </div>
       </div>

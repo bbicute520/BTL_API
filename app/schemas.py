@@ -31,6 +31,18 @@ class PriceHistoryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ActivityRead(BaseModel):
+    product_id: int
+    product_name: str
+    product_url: str | None = None
+    current_price: float
+    previous_price: float | None = None
+    change_amount: float | None = None
+    change_percent: float | None = None
+    recorded_at: datetime
+    activity_type: str
+
+
 class WatchlistBase(BaseModel):
     email: str
     product_id: int

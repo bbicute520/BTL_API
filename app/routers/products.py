@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Product, PriceHistory
-from app.schemas import PriceHistoryRead, ProductCreate, ProductRead
+from app.schemas import ActivityRead, PriceHistoryRead, ProductCreate, ProductRead
 from app.services.crawler import fetch_tiki_product
 
 router = APIRouter()
@@ -13,6 +13,62 @@ router = APIRouter()
 @router.get("", response_model=list[ProductRead])
 def list_products(db: Session = Depends(get_db)):
     return db.query(Product).all()
+
+
+@router.get("/activity", response_model=list[ActivityRead])
+def get_recent_activity(limit: int = 12, db: Session = Depends(get_db)):
+    rows = (
+        db.query(PriceHistory, Product)
+        .join(Product, PriceHistory.product_id == Product.id)
+        .order_by(PriceHistory.recorded_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    activities: list[ActivityRead] = []
+    for history, product in rows:
+        prev = (
+            db.query(PriceHistory.price)
+            .filter(
+                PriceHistory.product_id == history.product_id,
+                PriceHistory.recorded_at < history.recorded_at,
+            )
+            .order_by(PriceHistory.recorded_at.desc())
+            .first()
+        )
+        previous_price = prev[0] if prev else None
+
+        change_amount = None
+        change_percent = None
+        if previous_price is not None:
+            change_amount = history.price - previous_price
+            if previous_price != 0:
+                change_percent = round((change_amount / previous_price) * 100, 2)
+
+        if change_amount is None:
+            activity_type = "price_update"
+        elif change_amount < 0:
+            activity_type = "price_drop"
+        elif change_amount > 0:
+            activity_type = "price_increase"
+        else:
+            activity_type = "price_unchanged"
+
+        activities.append(
+            ActivityRead(
+                product_id=product.id,
+                product_name=product.name,
+                product_url=product.url,
+                current_price=history.price,
+                previous_price=previous_price,
+                change_amount=change_amount,
+                change_percent=change_percent,
+                recorded_at=history.recorded_at,
+                activity_type=activity_type,
+            )
+        )
+
+    return activities
 
 
 @router.get("/{product_id}", response_model=ProductRead)
@@ -78,6 +134,8 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     db.delete(product)
     db.commit()
     return {"message": "Deleted successfully"}
+
+
 
 
 @router.get("/{product_id}/chart")

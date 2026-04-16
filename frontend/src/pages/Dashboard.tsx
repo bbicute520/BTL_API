@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import api, { Stats } from '../services/api';
+import { useEffect, useMemo, useState } from 'react';
+import api, { ChartPoint, Product, ProductActivity, Stats } from '../services/api';
 
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats>({
@@ -9,10 +9,80 @@ export default function Dashboard() {
     total_notified: 0,
     total_crawls: 0,
   });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [chartData, setChartData] = useState<ChartPoint[]>([]);
+  const [activities, setActivities] = useState<ProductActivity[]>([]);
 
   useEffect(() => {
     api.getStats().then(setStats).catch(console.error);
+    api.getProducts()
+      .then((data) => {
+        setProducts(data);
+        if (data.length > 0) {
+          setSelectedProductId((current) => current ?? data[0].id);
+        }
+      })
+      .catch(console.error);
+    api.getRecentActivity().then(setActivities).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (!selectedProductId) {
+      setChartData([]);
+      return;
+    }
+    api.getProductChart(selectedProductId).then(setChartData).catch(console.error);
+  }, [selectedProductId]);
+
+  const selectedProduct = useMemo(
+    () => products.find((item) => item.id === selectedProductId) || null,
+    [products, selectedProductId]
+  );
+
+  const chartStats = useMemo(() => {
+    if (chartData.length === 0) {
+      return null;
+    }
+    const prices = chartData.map((point) => point.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const lastPrice = prices[prices.length - 1];
+    return { minPrice, maxPrice, lastPrice };
+  }, [chartData]);
+
+  const chartPoints = useMemo(() => {
+    if (chartData.length === 0 || !chartStats) return '';
+    const range = chartStats.maxPrice - chartStats.minPrice || 1;
+
+    return chartData
+      .map((point, index) => {
+        const x = (index / Math.max(chartData.length - 1, 1)) * 1000;
+        const y = 360 - ((point.price - chartStats.minPrice) / range) * 280;
+        return `${x},${y}`;
+      })
+      .join(' ');
+  }, [chartData, chartStats]);
+
+  const chartLabels = useMemo(() => {
+    if (chartData.length === 0) return [];
+    const indices = [0, 1, 2, 3, 4]
+      .map((i) => Math.round((i / 4) * (chartData.length - 1)))
+      .filter((value, index, array) => array.indexOf(value) === index);
+    return indices.map((index) => {
+      const label = chartData[index]?.date || '';
+      const date = new Date(label);
+      if (Number.isNaN(date.getTime())) {
+        return label;
+      }
+      return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    });
+  }, [chartData]);
+
+  const formatActivityTime = (value: string) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  };
 
   return (
     <div className="p-12 space-y-10">
@@ -96,30 +166,86 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Area Chart Container */}
         <div className="lg:col-span-2 bg-surface border border-outline rounded-2xl p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-10">
+          <div className="flex flex-col gap-4 mb-8 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h4 className="font-headline text-xl font-bold text-on-surface">Biến động giá thị trường</h4>
-              <p className="text-on-surface-variant text-xs mt-1">Biểu đồ xu hướng của các danh mục hàng đầu trong 30 ngày qua</p>
+              <h4 className="font-headline text-xl font-bold text-on-surface">Biến động giá sản phẩm</h4>
+              <p className="text-on-surface-variant text-xs mt-1">
+                {selectedProduct ? `Theo dõi giá: ${selectedProduct.name}` : 'Chưa có dữ liệu sản phẩm'}
+              </p>
             </div>
-            <div className="flex gap-2">
-              <button className="px-4 py-1.5 rounded-full text-xs font-bold bg-primary text-white">Hàng ngày</button>
-              <button className="px-4 py-1.5 rounded-full text-xs font-bold text-on-surface-variant hover:bg-surface-container transition-colors">Hàng tháng</button>
+            <div className="flex items-center gap-3">
+              <select
+                value={selectedProductId ?? ''}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setSelectedProductId(value ? Number(value) : null);
+                }}
+                className="w-56 truncate px-4 py-1.5 rounded-full text-xs font-bold bg-surface border border-outline text-on-surface-variant hover:bg-surface-container transition-colors"
+                disabled={products.length === 0}
+              >
+                {products.length === 0 ? (
+                  <option value="">Chưa có sản phẩm</option>
+                ) : (
+                  products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name}
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
           </div>
           
           <div className="flex-1 relative min-h-[350px] w-full bg-gradient-to-t from-surface-container-low/20 to-transparent rounded-lg flex items-end overflow-hidden">
-            {/* Simulated Area Chart Path */}
-            <div 
-              className="absolute inset-0 bg-primary/10 w-full h-full"
-              style={{ clipPath: 'polygon(0% 100%, 0% 60%, 15% 55%, 30% 70%, 45% 40%, 60% 50%, 75% 30%, 90% 45%, 100% 35%, 100% 100%)' }}
-            ></div>
-            
-            {/* Simulated Trend Line */}
-            <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 400">
-              <path d="M0,240 L150,220 L300,280 L450,160 L600,200 L750,120 L900,180 L1000,140" fill="none" stroke="#0c56d0" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-lg" />
-              <circle cx="450" cy="160" r="6" fill="#0c56d0" className="animate-pulse" />
-              <circle cx="750" cy="120" r="6" fill="#0c56d0" />
-            </svg>
+            {chartData.length === 0 ? (
+              <div className="absolute inset-0 flex items-center justify-center text-sm text-on-surface-variant">
+                Chưa có dữ liệu lịch sử giá để hiển thị.
+              </div>
+            ) : (
+              <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 400">
+                <defs>
+                  <linearGradient id="priceArea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0c56d0" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#0c56d0" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <polyline
+                  fill="none"
+                  stroke="#0c56d0"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  points={chartPoints}
+                />
+                <polygon
+                  fill="url(#priceArea)"
+                  points={`${chartPoints} 1000,380 0,380`}
+                />
+              </svg>
+            )}
+
+            {chartStats && (
+              <div className="absolute top-4 right-4 bg-surface/90 border border-outline rounded-xl px-4 py-3 text-xs text-on-surface-variant space-y-1 shadow-sm">
+                <div className="flex justify-between gap-4">
+                  <span>Đỉnh</span>
+                  <span className="font-bold text-on-surface">
+                    {chartStats.maxPrice.toLocaleString()} ₫
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span>Đáy</span>
+                  <span className="font-bold text-on-surface">
+                    {chartStats.minPrice.toLocaleString()} ₫
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span>Mới nhất</span>
+                  <span className="font-bold text-primary">
+                    {chartStats.lastPrice.toLocaleString()} ₫
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Grid Lines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-10">
@@ -132,11 +258,15 @@ export default function Dashboard() {
           </div>
           
           <div className="flex justify-between mt-6 px-4">
-            <span className="text-[10px] font-bold text-on-surface-variant">01 THG 3</span>
-            <span className="text-[10px] font-bold text-on-surface-variant">08 THG 3</span>
-            <span className="text-[10px] font-bold text-on-surface-variant">15 THG 3</span>
-            <span className="text-[10px] font-bold text-on-surface-variant">22 THG 3</span>
-            <span className="text-[10px] font-bold text-on-surface-variant">30 THG 3</span>
+            {chartLabels.length === 0 ? (
+              <span className="text-[10px] font-bold text-on-surface-variant">Chưa có mốc thời gian</span>
+            ) : (
+              chartLabels.map((label, index) => (
+                <span key={`${label}-${index}`} className="text-[10px] font-bold text-on-surface-variant">
+                  {label}
+                </span>
+              ))
+            )}
           </div>
         </div>
 
@@ -144,61 +274,58 @@ export default function Dashboard() {
         <div className="bg-surface border border-outline rounded-2xl p-6 flex flex-col">
           <h4 className="font-headline text-xl font-bold text-on-surface mb-8">Hoạt động gần đây</h4>
           <div className="space-y-8 overflow-y-auto max-h-[450px] pr-2 custom-scrollbar">
-            
-            {/* Activity Item 1 */}
-            <div className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <div className="w-2 h-2 rounded-full bg-error ring-4 ring-error-container/20"></div>
-                <div className="w-px flex-1 bg-outline-variant/30 mt-2"></div>
-              </div>
-              <div className="pb-6">
-                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">2 phút trước</p>
-                <p className="text-sm font-bold text-on-surface leading-tight">Phát hiện giảm giá</p>
-                <p className="text-xs text-on-surface-variant mt-1">Apple iPhone 15 Pro Max (256GB) giảm <span className="text-error font-bold">-12%</span> tại Tiki Trading.</p>
-                <div className="mt-3 flex gap-2">
-                  <button className="text-[10px] font-bold bg-white px-3 py-1 rounded border border-outline-variant/10 hover:bg-white/80">Chi tiết</button>
-                  <button className="text-[10px] font-bold text-primary px-3 py-1">Mua ngay</button>
-                </div>
-              </div>
-            </div>
-
-            {/* Activity Item 2 */}
-            <div className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <div className="w-2 h-2 rounded-full bg-primary ring-4 ring-primary-container"></div>
-                <div className="w-px flex-1 bg-outline-variant/30 mt-2"></div>
-              </div>
-              <div className="pb-6">
-                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">1 giờ trước</p>
-                <p className="text-sm font-bold text-on-surface leading-tight">Đã tạo cảnh báo mới</p>
-                <p className="text-xs text-on-surface-variant mt-1">Quản trị viên đã thêm cảnh báo giá mục tiêu cho <span className="font-semibold text-on-surface">Sony PS5 Slim</span> ở mức 12.500.000 ₫.</p>
-              </div>
-            </div>
-
-            {/* Activity Item 3 */}
-            <div className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <div className="w-2 h-2 rounded-full bg-tertiary-dim ring-4 ring-tertiary-container"></div>
-                <div className="w-px flex-1 bg-outline-variant/30 mt-2"></div>
-              </div>
-              <div className="pb-6">
-                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">4 giờ trước</p>
-                <p className="text-sm font-bold text-on-surface leading-tight">Hoàn tất quét thị trường</p>
-                <p className="text-xs text-on-surface-variant mt-1">Cập nhật thành công 8.402 mã sản phẩm trong danh mục Điện tử. Không phát hiện bất thường.</p>
-              </div>
-            </div>
-
-            {/* Activity Item 4 */}
-            <div className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <div className="w-2 h-2 rounded-full bg-error ring-4 ring-error-container/20"></div>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Hôm qua</p>
-                <p className="text-sm font-bold text-on-surface leading-tight">Phát hiện giảm giá</p>
-                <p className="text-xs text-on-surface-variant mt-1">Samsung Galaxy Tab S9 FE+ giảm <span className="text-error font-bold">-8%</span>.</p>
-              </div>
-            </div>
+            {activities.length === 0 ? (
+              <div className="text-sm text-on-surface-variant">Chưa có hoạt động mới.</div>
+            ) : (
+              activities.map((activity, index) => {
+                const isDrop = activity.activity_type === 'price_drop';
+                const isIncrease = activity.activity_type === 'price_increase';
+                const changeText =
+                  activity.change_percent === null
+                    ? 'Giá được cập nhật'
+                    : `${activity.change_percent > 0 ? '+' : ''}${activity.change_percent}%`;
+                return (
+                  <div key={`${activity.product_id}-${index}`} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          isDrop
+                            ? 'bg-error ring-4 ring-error-container/20'
+                            : isIncrease
+                              ? 'bg-primary ring-4 ring-primary-container'
+                              : 'bg-tertiary-dim ring-4 ring-tertiary-container'
+                        }`}
+                      ></div>
+                      {index !== activities.length - 1 && (
+                        <div className="w-px flex-1 bg-outline-variant/30 mt-2"></div>
+                      )}
+                    </div>
+                    <div className="pb-6">
+                      <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">
+                        {formatActivityTime(activity.recorded_at)}
+                      </p>
+                      <p className="text-sm font-bold text-on-surface leading-tight">
+                        {isDrop ? 'Phát hiện giảm giá' : isIncrease ? 'Giá tăng' : 'Cập nhật giá'}
+                      </p>
+                      <p className="text-xs text-on-surface-variant mt-1">
+                        {activity.product_name} thay đổi {changeText}.
+                      </p>
+                      {activity.product_url && (
+                        <div className="mt-3 flex gap-2">
+                          <a
+                            href={activity.product_url}
+                            target="_blank"
+                            className="text-[10px] font-bold text-primary px-3 py-1"
+                          >
+                            Xem sản phẩm
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
 
           </div>
           <button className="mt-auto pt-6 text-center text-xs font-bold text-primary hover:underline transition-all">Xem tất cả hoạt động</button>

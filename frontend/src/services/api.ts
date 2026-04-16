@@ -1,4 +1,5 @@
-const API_BASE_URL = "https://price-tracker-gp8d.onrender.com";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL;
 
 export interface Product {
   id: number;
@@ -38,6 +39,23 @@ export interface Stats {
   total_crawls: number;
 }
 
+export interface ChartPoint {
+  date: string;
+  price: number;
+}
+
+export interface ProductActivity {
+  product_id: number;
+  product_name: string;
+  product_url: string | null;
+  current_price: number;
+  previous_price: number | null;
+  change_amount: number | null;
+  change_percent: number | null;
+  recorded_at: string;
+  activity_type: string;
+}
+
 const DEFAULT_STATS: Stats = {
   total_products: 0,
   price_drops: 0,
@@ -50,6 +68,16 @@ const api = {
   // Products
   async getProducts(): Promise<Product[]> {
     const res = await fetch(`${API_BASE_URL}/products`);
+    return res.json();
+  },
+
+  async getProductChart(productId: number): Promise<ChartPoint[]> {
+    const res = await fetch(`${API_BASE_URL}/products/${productId}/chart`);
+    return res.json();
+  },
+
+  async getRecentActivity(limit = 12): Promise<ProductActivity[]> {
+    const res = await fetch(`${API_BASE_URL}/products/activity?limit=${limit}`);
     return res.json();
   },
 
