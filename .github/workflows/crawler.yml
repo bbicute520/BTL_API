@@ -2,7 +2,7 @@ name: Crawler Job
 
 on:
   schedule:
-    - cron: "0 */6 * * *" # Chạy mỗi 6 giờ
+    - cron: "0 * * * *" # Chạy mỗi giờ
   workflow_dispatch: # Cho phép chạy thủ công từ GitHub UI
 
 jobs:

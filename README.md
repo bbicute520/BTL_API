@@ -1,65 +1,67 @@
-# 📦 Price Tracker API — Hệ thống Theo dõi Giá Thông minh
+# Price Tracker API + Frontend
 
-Hệ thống REST API chuyên nghiệp được xây dựng bằng **FastAPI** và **Python**, cho phép theo dõi tự động biến động giá sản phẩm trên **Tiki** và gửi cảnh báo qua Email. Đã tối ưu hóa để chạy trên **PostgreSQL (Supabase)** và sẵn sàng đóng gói với **Docker**.
+He thong theo doi bien dong gia san pham Tiki, gom backend FastAPI va frontend Vite/React. Du an tap trung vao crawler, watchlist, thong ke va bieu do gia theo san pham.
 
----
+## Tong quan nhanh
+- Dashboard thong ke + bieu do gia theo san pham
+- Watchlist va canh bao gia qua Email/Telegram
+- Crawler tu dong (GitHub Actions)
+- API docs san sang (Swagger/Redoc)
 
-## ✨ Tính năng cao cấp (Premium Features)
+## Cong nghe
+- Backend: FastAPI, SQLAlchemy
+- Frontend: Vite, React, Tailwind CSS
+- DB: SQLite (local) hoac PostgreSQL
+- CI/CD: GitHub Actions
 
-- 🚀 **Asynchronous Architecture**: Toàn bộ hệ thống chạy bất đồng bộ (FastAPI + AsyncIOScheduler + Httpx).
-- 🛡️ **API Security**: Bảo vệ các điểm cuối bằng `X-API-KEY`.
-- 🕷️ **Smart Crawler**: Cơ chế tự động thử lại (Retry) và Exponential Backoff khi bị Tiki chặn.
-- 🕒 **Robotic Scheduler**: Tự động quét giá định kỳ và so sánh với ngưỡng mục tiêu của người dùng.
-- 📧 **Instant Alerts**: Thông báo ngay lập tức qua **Gmail** và **Telegram** khi giá giảm chạm ngưỡng.
-- 🐳 **Dockerized**: Triển khai thần tốc chỉ với Docker Compose.
-- 🧪 **CI/CD Ready**: Tích hợp GitHub Actions để tự động Test và chạy Crawler định kỳ.
-- 🪵 **Centralized Logging**: Ghi nhật ký chi tiết vào console và hệ thống.
+## Kien truc (rut gon)
+1. Frontend goi API -> Backend FastAPI
+2. Backend luu san pham + lich su gia
+3. Crawler cap nhat gia dinh ky
+4. Watchlist kich hoat thong bao
 
----
+## Cai dat nhanh
 
-## 🛠️ Yêu cầu hệ thống
-- Python 3.11+
-- Tài khoản Supabase (Hoặc PostgreSQL bất kỳ)
-- Gmail App Password (để gửi email)
-- Telegram Bot Token & Chat ID (để nhận tin nhắn)
-- Docker & Docker Compose (Tùy chọn)
-
----
-
-## 🚀 Hướng dẫn khởi chạy nhanh
-
-### Bước 1: Cấu hình môi trường
-Copy `.env.example` thành `.env` và điền các thông tin:
-- `DATABASE_URL`: Link kết nối Supabase của bạn.
-- `SMTP_...`: Cấu hình gửi mail.
-- `TELEGRAM_...`: Cấu hình bot Telegram.
-
-### Bước 2: Triển khai
-
-#### Cách 1: Sử dụng Docker (Khuyên dùng)
+### Backend
 ```bash
-docker-compose up -d
-```
-Truy cập Swagger UI tại: `http://localhost:8000/docs`
-
-#### Cách 2: Chạy trực tiếp (Local)
-1. Cài đặt thư viện: `pip install -r requirements.txt`
-2. Khởi chạy: `uvicorn app.main:app --reload`
-
----
-
-## 🕷️ GitHub Actions (Tự động hóa)
-Dự án đã cấu hình sẵn 2 workflow:
-1. **Python CI**: Chạy test tự động mỗi khi push code.
-2. **Crawler Job**: Tự động kích hoạt quét giá trên GitHub mỗi 6 giờ.
-
----
-
-## 🧪 Chạy Kiểm thử (Testing)
-```bash
-python tests/test_api.py
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 ```
 
----
-**Phát triển bởi:** [Tên của bạn] - *Bài tập lớn môn Lập trình API*
+API docs:
+- Swagger: http://localhost:8000/docs
+- Redoc: http://localhost:8000/redoc
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Bien moi truong
+
+### Backend
+- DATABASE_URL
+- SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD
+- TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+
+### Frontend
+Trong frontend/.env:
+```
+VITE_API_BASE_URL="http://localhost:8000"
+```
+
+## GitHub Actions
+- Python CI: chay test khi push/PR
+- Crawler Job: chay moi gio (cron)
+
+## Testing
+```bash
+pytest tests/test_api.py
+```
+
+## Trien khai (goi y)
+- Backend: Render
+- Frontend: Vercel
 
