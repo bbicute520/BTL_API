@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0');
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1A1A1A;
+  --color-primary-dim: #333333;
+  --color-on-primary: #FFFFFF;
+  --color-primary-container: #F0F0F0;
+  --color-on-primary-container: #1A1A1A;
+  
+  --color-secondary: #666666;
+  --color-secondary-dim: #888888;
+  --color-on-secondary: #FFFFFF;
+  --color-secondary-container: #E5E5E5;
+  --color-on-secondary-container: #1A1A1A;
+
+  --color-tertiary: #999999;
+  --color-tertiary-dim: #AAAAAA;
+  --color-on-tertiary: #FFFFFF;
+  --color-tertiary-container: #F4F4F7;
+  --color-on-tertiary-container: #1A1A1A;
+
+  --color-error: #E67E22;
+  --color-error-dim: #D35400;
+  --color-on-error: #FFFFFF;
+  --color-error-container: #FDEBD0;
+  --color-on-error-container: #E67E22;
+
+  --color-surface: #FFFFFF;
+  --color-on-surface: #1A1A1A;
+  --color-surface-variant: #F4F4F7;
+  --color-on-surface-variant: #666666;
+  
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #FFFFFF;
+  --color-surface-container: #F4F4F7;
+  --color-surface-container-high: #F0F0F0;
+  --color-surface-container-highest: #E5E5E5;
+
+  --color-outline: #E5E5E5;
+  --color-outline-variant: #E5E5E5;
+  --color-background: #F4F4F7;
+  --color-on-background: #1A1A1A;
+
+  --font-headline: "Manrope", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-label: "Inter", sans-serif;
+
+  --radius-xl: 16px;
+}
+
+@layer base {
+  body {
+    @apply font-body bg-background text-on-surface;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .ambient-shadow {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  .glass-nav {
+    @apply bg-surface;
+  }
+  .inner-glow {
+    box-shadow: none;
+  }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-outline-variant rounded-full;
+  }
+}
