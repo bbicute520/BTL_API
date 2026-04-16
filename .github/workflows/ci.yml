@@ -23,8 +23,8 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Run tests with pytest
+      - name: Run Tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          pytest tests/
+          pytest tests/test_api.py

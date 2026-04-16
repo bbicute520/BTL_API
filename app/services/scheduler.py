@@ -29,15 +29,28 @@ def crawl_all_job():
                 print(f"DEBUG: Fetched price for {prod.tiki_id}: {new_price}")
                 
                 if new_price is not None:
-                    # Luôn cập nhật giá hiện tại và thời gian kiểm tra
+                    old_price = prod.current_price
+                    
+                    # 1. Tối ưu: Chỉ lưu lịch sử nếu giá thực sự thay đổi
+                    if old_price is None or new_price != old_price:
+                        history = PriceHistory(product_id=prod.id, price=new_price)
+                        db.add(history)
+                        print(f"DEBUG: Price changed from {old_price} to {new_price}. Recording history.")
+                    
+                    # 2. Cảnh báo giảm giá sốc (Ví dụ: Giảm hơn 5%)
+                    if old_price and new_price < old_price:
+                        drop_percent = ((old_price - new_price) / old_price) * 100
+                        if drop_percent >= 5:
+                            print(f"ALERT: Huge price drop detected for {prod.name}: -{drop_percent:.1f}%")
+                            from app.services.notification import send_telegram_message
+                            send_telegram_message(f"🔥 <b>GIẢM GIÁ SỐC: -{drop_percent:.1f}%</b>\n📦 {prod.name}\n💰 Giá mới: {new_price:,.0f}đ\n📉 Giá cũ: {old_price:,.0f}đ\n🔗 <a href='{prod.url}'>Xem ngay trên Tiki</a>")
+
+                    # Cập nhật thông tin sản phẩm chính
                     prod.current_price = new_price
+                    prod.image_url = data.get("image_url")
                     prod.last_checked = datetime.utcnow()
                     
-                    # Ghi nhận lịch sử (Có thể thêm logic if new_price != prod.current_price ở đây nếu muốn)
-                    history = PriceHistory(product_id=prod.id, price=new_price)
-                    db.add(history)
-                    
-                    # Kiểm tra watchlist
+                    # Kiểm tra watchlist thông thường
                     watchlists = db.query(Watchlist).filter(Watchlist.product_id == prod.id, Watchlist.is_notified == False).all()
                     for wl in watchlists:
                         if new_price <= wl.target_price:
@@ -60,5 +73,5 @@ def crawl_all_job():
 
 def start_scheduler() -> None:
     scheduler = BackgroundScheduler()
-    scheduler.add_job(crawl_all_job, 'interval', hours=6)
+    scheduler.add_job(crawl_all_job, 'interval', hours=1)
     scheduler.start()

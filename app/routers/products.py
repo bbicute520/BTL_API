@@ -35,6 +35,7 @@ async def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
             name=data["name"],
             tiki_id=payload.tiki_id,
             url=data["url"],
+            image_url=data["image_url"],
             current_price=data["current_price"],
             last_checked=datetime.utcnow()
         )
@@ -53,6 +54,7 @@ async def create_product(payload: ProductCreate, db: Session = Depends(get_db)):
             name=payload.name,
             tiki_id=payload.tiki_id,
             url=payload.url,
+            image_url=payload.image_url,
             current_price=payload.current_price,
             last_checked=datetime.utcnow() if payload.current_price else None
         )
@@ -78,9 +80,21 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     return {"message": "Deleted successfully"}
 
 
-@router.get("/{product_id}/price-history", response_model=list[PriceHistoryRead])
-def get_price_history(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(Product).filter(Product.id == product_id).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    return product.price_history
+@router.get("/{product_id}/chart")
+def get_chart_data(product_id: int, db: Session = Depends(get_db)):
+    """Trả về dữ liệu giá đã được tổng hợp để vẽ biểu đồ (1 điểm dữ liệu/ngày)"""
+    from sqlalchemy import func, cast, Date
+    
+    # Lấy giá muộn nhất (cuối cùng) của từng ngày
+    history = (
+        db.query(
+            cast(PriceHistory.recorded_at, Date).label("date"),
+            func.avg(PriceHistory.price).label("avg_price")
+        )
+        .filter(PriceHistory.product_id == product_id)
+        .group_by(cast(PriceHistory.recorded_at, Date))
+        .order_by("date")
+        .all()
+    )
+    
+    return [{"date": str(h.date), "price": round(h.avg_price, 0)} for h in history]
