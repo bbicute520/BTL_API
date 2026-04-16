@@ -18,5 +18,6 @@ async def fetch_tiki_product(tiki_id: str) -> dict:
         return {
             "name": data.get("name"),
             "url": f"https://tiki.vn/product-p{tiki_id}.html",
+            "image_url": data.get("thumbnail_url"),
             "current_price": data.get("price")
         }

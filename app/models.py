@@ -13,6 +13,7 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     tiki_id: Mapped[str | None] = mapped_column(String, unique=True)
     url: Mapped[str | None] = mapped_column(String)
+    image_url: Mapped[str | None] = mapped_column(String)
     current_price: Mapped[float | None] = mapped_column(Float)
     last_checked: Mapped[datetime | None] = mapped_column(DateTime)
 

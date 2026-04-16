@@ -4,9 +4,10 @@ from pydantic import BaseModel, ConfigDict
 
 
 class ProductBase(BaseModel):
-    name: str
+    name: str | None = None
     tiki_id: str | None = None
     url: str | None = None
+    image_url: str | None = None
 
 
 class ProductCreate(ProductBase):
@@ -43,5 +44,26 @@ class WatchlistCreate(WatchlistBase):
 class WatchlistRead(WatchlistBase):
     id: int
     is_notified: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WatchlistDetail(BaseModel):
+    id: int
+    email: str
+    product_id: int
+    alert_type: str
+    target_price: float | None
+    base_price: float | None
+    drop_percentage: float | None
+    cooldown_hours: int
+    is_notified: bool
+    last_notified_at: datetime | None
+    product_name: str
+    product_image: str | None
+    current_price: float | None
+    lowest_price: float | None
+    product_url: str | None
+    tiki_id: str | None
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,19 +1,24 @@
 import os
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from dotenv import load_dotenv
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./app.db")
+load_dotenv()
 
-connect_args = {}
-if DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL is required")
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+# Fix lỗi SQLAlchemy 1.4+ không nhận diện 'postgres://' (phải là 'postgresql://')
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # Tự động tạo các bảng nếu chưa có
+import app.models
 Base.metadata.create_all(bind=engine)
 
 def get_db():

@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Watchlist, Product
-from app.schemas import WatchlistCreate, WatchlistRead
+from app.models import Watchlist, Product, PriceHistory
+from app.schemas import WatchlistCreate, WatchlistDetail, WatchlistRead
 
 router = APIRouter()
 
@@ -11,6 +12,50 @@ router = APIRouter()
 @router.get("", response_model=list[WatchlistRead])
 def list_watchlist(db: Session = Depends(get_db)):
     return db.query(Watchlist).all()
+
+
+@router.get("/details", response_model=list[WatchlistDetail])
+def list_watchlist_details(db: Session = Depends(get_db)):
+    min_price_subq = (
+        db.query(
+            PriceHistory.product_id,
+            func.min(PriceHistory.price).label("lowest_price"),
+        )
+        .group_by(PriceHistory.product_id)
+        .subquery()
+    )
+
+    rows = (
+        db.query(Watchlist, Product, min_price_subq.c.lowest_price)
+        .join(Product, Watchlist.product_id == Product.id)
+        .outerjoin(min_price_subq, Product.id == min_price_subq.c.product_id)
+        .all()
+    )
+
+    details: list[WatchlistDetail] = []
+    for watchlist, product, lowest_price in rows:
+        details.append(
+            WatchlistDetail(
+                id=watchlist.id,
+                email=watchlist.email,
+                product_id=watchlist.product_id,
+                alert_type="fixed",
+                target_price=watchlist.target_price,
+                base_price=None,
+                drop_percentage=None,
+                cooldown_hours=24,
+                is_notified=watchlist.is_notified,
+                last_notified_at=None,
+                product_name=product.name,
+                product_image=product.image_url,
+                current_price=product.current_price,
+                lowest_price=lowest_price,
+                product_url=product.url,
+                tiki_id=product.tiki_id,
+            )
+        )
+
+    return details
 
 
 @router.post("", response_model=WatchlistRead)
