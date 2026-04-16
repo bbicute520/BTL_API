@@ -4,10 +4,9 @@ from pydantic import BaseModel, ConfigDict
 
 
 class ProductBase(BaseModel):
-    name: str | None = None
+    name: str
     tiki_id: str | None = None
     url: str | None = None
-    image_url: str | None = None
 
 
 class ProductCreate(ProductBase):

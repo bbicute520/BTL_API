@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 import asyncio
 
@@ -11,17 +12,48 @@ from app.services.notification import send_price_alert
 router = APIRouter()
 
 
-@router.post("/test-telegram")
-async def test_telegram():
-    """Endpoint để test nhanh kết nối với Telegram Bot"""
-    from app.services.notification import send_telegram_message
-    send_telegram_message("🔔 <b>Kết nối thành công!</b>\nHệ thống Price Tracker đã sẵn sàng gửi thông báo cho bạn.")
-    return {"message": "Test message sent to Telegram. Check your bot!"}
+@router.get("/stats")
+def get_stats(db: Session = Depends(get_db)) -> dict:
+    total_products = db.query(func.count(Product.id)).scalar() or 0
+    active_watchlist = db.query(func.count(Watchlist.id)).scalar() or 0
+    total_notified = (
+        db.query(func.count(Watchlist.id))
+        .filter(Watchlist.is_notified.is_(True))
+        .scalar()
+        or 0
+    )
+    total_crawls = db.query(func.count(PriceHistory.id)).scalar() or 0
+
+    min_price_subq = (
+        db.query(
+            PriceHistory.product_id,
+            func.min(PriceHistory.price).label("min_price"),
+        )
+        .group_by(PriceHistory.product_id)
+        .subquery()
+    )
+    price_drops = (
+        db.query(func.count(Product.id))
+        .join(min_price_subq, Product.id == min_price_subq.c.product_id)
+        .filter(
+            Product.current_price.isnot(None),
+            Product.current_price <= min_price_subq.c.min_price,
+        )
+        .scalar()
+        or 0
+    )
+
+    return {
+        "total_products": total_products,
+        "price_drops": price_drops,
+        "active_watchlist": active_watchlist,
+        "total_notified": total_notified,
+        "total_crawls": total_crawls,
+    }
 
 
 @router.post("/{product_id}")
 async def crawl_product(product_id: int, db: Session = Depends(get_db)) -> dict:
-
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product or not product.tiki_id:
         raise HTTPException(status_code=404, detail="Product not found or missing tiki_id")
@@ -48,5 +80,3 @@ async def crawl_product(product_id: int, db: Session = Depends(get_db)) -> dict:
 def crawl_all(background_tasks: BackgroundTasks) -> dict:
     background_tasks.add_task(crawl_all_job)
     return {"message": "Crawler job started in background"}
-
-

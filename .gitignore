@@ -23,3 +23,7 @@ Thumbs.db
 
 #frontend
 node_modules/
+
+# Gemini
+GEMINI.md
+.gemini/
